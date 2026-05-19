@@ -83,7 +83,6 @@ async def analyze_with_gigachat(text: str) -> dict | None:
 
     try:
         content = result["choices"][0]["message"]["content"].strip()
-        # Clean markdown if present
         content = re.sub(r"^```json\s*", "", content)
         content = re.sub(r"\s*```$", "", content)
         content = content.strip()
@@ -95,17 +94,31 @@ async def analyze_with_gigachat(text: str) -> dict | None:
 
 
 def build_search_links(item: str) -> str:
-    """Build search URLs for major Russian marketplaces."""
+    """Build search URLs for major Russian marketplaces and HoReCa suppliers."""
     query = item.replace(" ", "+")
-    return (
+    yandex_query = item.replace(" ", "+")
+
+    # Маркетплейсы — прямые ссылки работают надёжно
+    marketplaces = (
+        f"🛒 *Маркетплейсы:*\n"
         f"• [Яндекс.Маркет](https://market.yandex.ru/search?text={query})\n"
         f"• [Ozon](https://www.ozon.ru/search/?text={query})\n"
         f"• [Wildberries](https://www.wildberries.ru/catalog/0/search.aspx?search={query})\n"
-        f"• [Restorus HoReCa](https://restorus.ru/search/?q={query})\n"
-        f"• [Первый HoReCa](https://1horeca.ru/search/?q={query})\n"
-        f"• [OnlineTrade](https://www.onlinetrade.ru/search.html?search_term={query})\n"
-        f"• [Комплекс Бар](https://www.complexbar.ru/search/?q={query})\n"
+        f"• [Мегамаркет](https://megamarket.ru/catalog/?q={query})\n"
     )
+
+    # HoReCa поставщики — через поиск Яндекса по конкретному сайту
+    # (это надёжнее чем прямые URL которые часто меняются)
+    horeca = (
+        f"\n🍽 *HoReCa поставщики:*\n"
+        f"• [Комплект Бар](https://yandex.ru/search/?text={yandex_query}+site%3Akomplektbar.ru)\n"
+        f"• [Ресторан Комплект](https://yandex.ru/search/?text={yandex_query}+site%3Arestoran-komplekt.ru)\n"
+        f"• [Барнео](https://yandex.ru/search/?text={yandex_query}+site%3Abarneo.ru)\n"
+        f"• [OnlineTrade](https://yandex.ru/search/?text={yandex_query}+site%3Aonlinetrade.ru)\n"
+        f"• [Restorus](https://yandex.ru/search/?text={yandex_query}+site%3Arestorus.ru)\n"
+    )
+
+    return marketplaces + horeca
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -118,7 +131,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     sender = update.message.from_user.full_name if update.message.from_user else "Неизвестный"
 
-    # Handle messages with URLs (link to product)
+    # Handle messages with URLs
     urls = re.findall(r"https?://\S+", text)
     if urls:
         msg = f"🔗 *Ссылка на товар*\n\n"
@@ -136,7 +149,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # Analyze with GigaChat
     try:
         analysis = await analyze_with_gigachat(text)
     except Exception as e:
@@ -152,7 +164,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     material = analysis.get("material", "").strip()
     notes = analysis.get("notes", "").strip()
 
-    # Build search query with attributes
+    # Build smart search query with attributes
     search_query_parts = [item]
     if color:
         search_query_parts.append(color)
