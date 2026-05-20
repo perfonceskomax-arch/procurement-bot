@@ -8,7 +8,7 @@ import ssl
 from urllib.parse import quote_plus, urlparse
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
-
+# обновление парсера ВБ
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 MY_TELEGRAM_ID = int(os.environ["MY_TELEGRAM_ID"])
 GIGACHAT_AUTH_KEY = os.environ["GIGACHAT_AUTH_KEY"]
