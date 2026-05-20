@@ -91,11 +91,10 @@ async def analyze_with_gigachat(text: str) -> dict | None:
 
 
 def build_search_links(item: str) -> str:
-    """Build search URLs - marketplaces direct, HoReCa via Yandex site search."""
+    """Build search URLs with verified working formats for each site."""
     q = quote_plus(item)
-    yq = quote_plus(item)  # для Yandex site search
 
-    # Маркетплейсы — прямые ссылки, проверены, работают
+    # Маркетплейсы — прямые ссылки
     marketplaces = (
         f"🛒 *Маркетплейсы:*\n"
         f"• [Яндекс.Маркет](https://market.yandex.ru/search?text={q})\n"
@@ -104,13 +103,13 @@ def build_search_links(item: str) -> str:
         f"• [ВсеИнструменты](https://www.vseinstrumenti.ru/search/?what={q})\n"
     )
 
-    # HoReCa поставщики — через Яндекс с привязкой к сайту (надёжно)
+    # HoReCa-поставщики — каждый со своим форматом поиска
     horeca = (
         f"\n🍽 *HoReCa поставщики:*\n"
-        f"• [Комплекс Бар](https://yandex.ru/search/?text={yq}+complexbar.ru)\n"
-        f"• [Барнео](https://yandex.ru/search/?text={yq}+barneo.ru)\n"
-        f"• [Ресторан Комплект](https://yandex.ru/search/?text={yq}+r-komplekt.ru)\n"
-        f"• [РестИнтернэшнл](https://yandex.ru/search/?text={yq}+restinternational.ru)\n"
+        f"• [Комплекс Бар](https://complexbar.ru/search/?q={q})\n"
+        f"• [Барнео](https://www.barneo.ru/product-search?searchText={q})\n"
+        f"• [Ресторан Комплект](https://r-komplekt.ru/search/?q={q}&send=Y)\n"
+        f"• [РестИнтернэшнл](https://restinternational.ru/catalog/?q={q})\n"
     )
 
     return marketplaces + horeca
