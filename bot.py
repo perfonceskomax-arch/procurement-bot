@@ -106,7 +106,7 @@ def build_search_links(item: str) -> str:
     # HoReCa-поставщики — каждый со своим форматом поиска
     horeca = (
         f"\n🍽 *HoReCa поставщики:*\n"
-        f"• [Комплекс Бар](https://complexbar.ru/search/?q={q})\n"
+       f"• [Комплекс Бар](https://complexbar.ru/?subcats=Y&pcode_from_q=Y&pshort=Y&pfull=Y&pname=Y&pkeywords=Y&search_performed=Y&q={q}&dispatch=products.search)\n"
         f"• [Барнео](https://www.barneo.ru/product-search?searchText={q})\n"
         f"• [Ресторан Комплект](https://r-komplekt.ru/search/?q={q}&send=Y)\n"
         f"• [РестИнтернэшнл](https://restinternational.ru/catalog/?q={q})\n"
