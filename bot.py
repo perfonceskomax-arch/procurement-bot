@@ -5,6 +5,7 @@ import asyncio
 import json
 import aiohttp
 import ssl
+from urllib.parse import quote_plus
 from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, ContextTypes
 
@@ -12,14 +13,12 @@ BOT_TOKEN = os.environ["BOT_TOKEN"]
 MY_TELEGRAM_ID = int(os.environ["MY_TELEGRAM_ID"])
 GIGACHAT_AUTH_KEY = os.environ["GIGACHAT_AUTH_KEY"]
 
-# Disable SSL verification for Sber API (they use their own root cert)
 ssl_context = ssl.create_default_context()
 ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
 
 async def get_gigachat_token():
-    """Get access token from GigaChat OAuth."""
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
         "Accept": "application/json",
@@ -27,7 +26,6 @@ async def get_gigachat_token():
         "Authorization": f"Basic {GIGACHAT_AUTH_KEY}",
     }
     data = "scope=GIGACHAT_API_PERS"
-
     connector = aiohttp.TCPConnector(ssl=ssl_context)
     async with aiohttp.ClientSession(connector=connector) as session:
         async with session.post(
@@ -40,7 +38,6 @@ async def get_gigachat_token():
 
 
 async def analyze_with_gigachat(text: str) -> dict | None:
-    """Use GigaChat to analyze if message is a procurement request."""
     token = await get_gigachat_token()
     if not token:
         return None
@@ -94,28 +91,26 @@ async def analyze_with_gigachat(text: str) -> dict | None:
 
 
 def build_search_links(item: str) -> str:
-    """Build search URLs for major Russian marketplaces and HoReCa suppliers."""
-    query = item.replace(" ", "+")
-    yandex_query = item.replace(" ", "+")
+    """Build search URLs - marketplaces direct, HoReCa via Yandex site search."""
+    q = quote_plus(item)
+    yq = quote_plus(item)  # для Yandex site search
 
-    # Маркетплейсы — прямые ссылки работают надёжно
+    # Маркетплейсы — прямые ссылки, проверены, работают
     marketplaces = (
         f"🛒 *Маркетплейсы:*\n"
-        f"• [Яндекс.Маркет](https://market.yandex.ru/search?text={query})\n"
-        f"• [Ozon](https://www.ozon.ru/search/?text={query})\n"
-        f"• [Wildberries](https://www.wildberries.ru/catalog/0/search.aspx?search={query})\n"
-        f"• [Мегамаркет](https://megamarket.ru/catalog/?q={query})\n"
+        f"• [Яндекс.Маркет](https://market.yandex.ru/search?text={q})\n"
+        f"• [Ozon](https://www.ozon.ru/search/?text={q})\n"
+        f"• [Wildberries](https://www.wildberries.ru/catalog/0/search.aspx?search={q})\n"
+        f"• [ВсеИнструменты](https://www.vseinstrumenti.ru/search/?what={q})\n"
     )
 
-    # HoReCa поставщики — через поиск Яндекса по конкретному сайту
-    # (это надёжнее чем прямые URL которые часто меняются)
+    # HoReCa поставщики — через Яндекс с привязкой к сайту (надёжно)
     horeca = (
         f"\n🍽 *HoReCa поставщики:*\n"
-        f"• [Комплект Бар](https://yandex.ru/search/?text={yandex_query}+site%3Akomplektbar.ru)\n"
-        f"• [Ресторан Комплект](https://yandex.ru/search/?text={yandex_query}+site%3Arestoran-komplekt.ru)\n"
-        f"• [Барнео](https://yandex.ru/search/?text={yandex_query}+site%3Abarneo.ru)\n"
-        f"• [OnlineTrade](https://yandex.ru/search/?text={yandex_query}+site%3Aonlinetrade.ru)\n"
-        f"• [Restorus](https://yandex.ru/search/?text={yandex_query}+site%3Arestorus.ru)\n"
+        f"• [Комплекс Бар](https://yandex.ru/search/?text={yq}+complexbar.ru)\n"
+        f"• [Барнео](https://yandex.ru/search/?text={yq}+barneo.ru)\n"
+        f"• [Ресторан Комплект](https://yandex.ru/search/?text={yq}+r-komplekt.ru)\n"
+        f"• [РестИнтернэшнл](https://yandex.ru/search/?text={yq}+restinternational.ru)\n"
     )
 
     return marketplaces + horeca
@@ -131,7 +126,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     sender = update.message.from_user.full_name if update.message.from_user else "Неизвестный"
 
-    # Handle messages with URLs
     urls = re.findall(r"https?://\S+", text)
     if urls:
         msg = f"🔗 *Ссылка на товар*\n\n"
@@ -164,7 +158,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     material = analysis.get("material", "").strip()
     notes = analysis.get("notes", "").strip()
 
-    # Build smart search query with attributes
     search_query_parts = [item]
     if color:
         search_query_parts.append(color)
